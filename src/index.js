@@ -3,31 +3,47 @@ import dotenv from "dotenv"
 import { dbConnect } from "./db/db.js"
 import { ApiError } from "./utils/api-error.js"
 import { createServer } from "http"
-import {Server} from "socket.io"
+import { Server } from "socket.io"
 import cors from "cors"
 
 dotenv.config({
-    path:".env"
+  path: ".env"
 })
-const port=process.env.PORT
+const port = process.env.PORT
 const httpServer = createServer(app)
-const io=new Server(httpServer,cors({
-    origin: process.env.origin,
-    credentials: true,
-}));   
+const io = new Server(httpServer, cors({
+  origin: process.env.origin,
+  credentials: true,
+}));
 
 io.on("connection", (socket) => {
-  
+  socket.on("join", (username) => {
+    socket.join(username); // Join room with username
+    console.log(`${username} joined their personal room`);
+  });
+
   socket.on("message", (message) => {
     console.log("Received message from frontend:", message);
+
     io.emit("backend-message", message);
-     socket.broadcast.emit('message', message);
-  })
-  socket.on('typing', (data) => {
-    console.log("User is typing:", data);
-    socket.broadcast.emit('typing', data);
+    socket.emit('message', message);
+
+    io.to(message.sender.username).emit("updateParticipants", {
+      sender: message.sender.username,
+      receiver: message.receiver.username
+    });
+
+    io.to(message.receiver.username).emit("updateParticipants", {
+      sender: message.sender.username,
+      receiver: message.receiver.username
+    });
   });
+    socket.on('typing', (data) => {
+  console.log("User is typing:", data);
+  io.to(data.room).emit('userTyping', { sender: data.sender, receiver:data.receiver });
 });
+});
+
 
 app.get('/', (req, res) => {
   res.send(`
@@ -57,13 +73,13 @@ app.get('/', (req, res) => {
 });
 
 
-dbConnect().then(()=>{
+dbConnect().then(() => {
 
-httpServer.listen(port,()=>{
+  httpServer.listen(port, () => {
     console.log(`app listing on ${port}`)
-})
+  })
 }
-).catch((error)=>{
-    console.log("DB connection failed:",error)
-    throw new ApiError(501,"DB connection failed")
+).catch((error) => {
+  console.log("DB connection failed:", error)
+  throw new ApiError(501, "DB connection failed")
 })
