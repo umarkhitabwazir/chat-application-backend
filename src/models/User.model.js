@@ -1,101 +1,89 @@
-import mongoose from "mongoose";
-import bcrypt from "bcrypt"
-import jwt from "jsonwebtoken"
-import dotenv from "dotenv"
-
+import mongoose, { Schema } from "mongoose";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
 dotenv.config({
-    path: ".env"
+    path: ".env"        
 })
 
-const UserSchema = mongoose.Schema(
+const userSchema = new Schema(
     {
-        googleId: {
-            type: String,
-            unique: true,
-            default: '',
-        },
         username: {
             type: String,
-            required: function () {
-                return !this.googleId;
-            },
-            unique: function () {
-                return !this.googleId;
-            },
-            trim: true,
-        },
-        name: {
-            type: String,
-            default: ''
+            required: [true,"username is required"],
+            unique: true,
+            lowercase: true,
+            trim: true, 
+            index: true
         },
         email: {
             type: String,
-            required: true,
+            required: [true,"email is required"],
             unique: true,
-            lowercase: true,
-            trim: true,
+            lowecase: true,
+            trim: true, 
+        },
+        fullName: {
+            type: String,
+            required: [true,"fullname is required"],            
+            trim: true, 
+            index: true
+        },
+        role:{
+            type: String,
+            trim: true, 
+            enum: ["user", "admin", "superadmin"],
+            default: "user"
         },
         password: {
             type: String,
-            required: function () {
-                return !this.googleId;
-            },
+            required: [true,"password is required"],
+            trim: true, 
         },
-        avatar: {
-            type: String,
-            default: '',
+        passwordResetCode:{
+            type: Number,
+            trim: true,
+        },
+      
+        phone:{
+            type:Number,
+            required: [true,"phone number is required"],
+            trim: true, 
         },
         refreshToken: {
             type: String,
-            default: '',
+            default: ""
         },
-        status: {
-            type: String,
-            enum: ['online', 'offline', 'away'],
-            default: 'offline',
+        emailVerificationCode:{
+            type: Number,
+            trim: true,
         },
-        lastSeen: {
-            type: Date,
-            default: Date.now,
-        },
-        socketId: {
-            type: String,
-            default: '',
-        },
-    },
-    { timestamps: true }
+        isVerified:{
+            type: Boolean,
+            default: false
+        }
+
+    },{timestamps: true}
 )
-UserSchema.pre('save', function (next) {
-    if (this.username) {
-        this.username = this.username.toLowerCase().replace(/\s+/g, '');
-    }
-    next();
-});
 
-
-UserSchema.pre("save", async function (next) {
+userSchema.pre("save",async function(next){
     const user = this
-    if (!user.isModified("password")) return next()
-    user.password = bcrypt.hashSync(user.password, 10)
+    if(!user.isModified("password")) return next()
+    user.password = bcrypt.hashSync(user.password,10)
     next()
 })
-
-UserSchema.methods.comparePassword = async function (plainPass) {
-    return await bcrypt.compare(plainPass, this.password)
+userSchema.methods.comparePassword =async function(plainPassword){
+    return await bcrypt.compareSync(plainPassword,this.password)
 }
-
-UserSchema.methods.generateAccessToken = async function () {
-    return jwt.sign(
-        { id: this._id },
+userSchema.methods.generateAccessToken =async function(){
+    return jwt.sign({id:this._id},
         process.env.JWT_ACCESS_TOKEN_SECRET,
-        { expiresIn: process.env.JWT_ACCESS_TOKEN_EXPIRES_IN }
-    )
-}
+        {expiresIn:process.env.JWT_ACCESS_TOKEN_EXPIRES_IN})
 
-UserSchema.methods.generateRefreshToken = async function () {
-    return jwt.sign({ id: this._id },
+}
+userSchema.methods.generateRefreshToken =async function(){
+    return jwt.sign({id:this._id},
         process.env.JWT_REFRESH_TOKEN_SECRET,
-        { expiresIn: process.env.JWT_REFRESH_TOKEN_EXPIRES_IN })
+        {expiresIn:process.env.JWT_REFRESH_TOKEN_EXPIRES_IN})
 }
-
-export const User = mongoose.models.User || mongoose.model('User', UserSchema); 
+export const User = mongoose.model( "User", userSchema)

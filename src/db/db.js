@@ -1,13 +1,15 @@
-import mongoose from 'mongoose'
-import doenv from "dotenv"
+import mongoose from "mongoose";
+import dotenv from "dotenv";
 
-doenv.config({
-    path:".env"
-})
-const db_url=process.env.DB_URL
+dotenv.config({
+    path: ".env",
+});
 
+const DB_URL = process.env.DB_URL;
 
-const dbConnect=async()=>{
-await mongoose.connect(db_url)
+const connectDb = async () => {
+    await mongoose.connect(DB_URL)
+
 }
-export {dbConnect}
+
+export default connectDb

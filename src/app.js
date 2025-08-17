@@ -1,69 +1,80 @@
 import express from "express"
-import session from "express-session";
-import { signUp } from "./routes/signup.route.js"
-import { login } from "./routes/login.route.js"
-import sendmessage from "./routes/sendMessage.route.js"
-import cookieParser from "cookie-parser"
+import { userRouter } from "./routes/user.routes.js";
+import bodyParser from "body-parser";
+import cookieParser from "cookie-parser";
 import cors from "cors"
-import { ApiError } from "./utils/api-error.js"
-import fetchAllMessageRoute from "./routes/fetchAllMessage.route.js"
-import getLoggedInUserRoute from "./routes/getLoggedinUser.route.js"
-import checkUserRoute from "./routes/checkUser.route.js"
-import passport from "passport"
-import "./passport.js"
-import { loggedOutRouter } from "./routes/loggedOut.route.js";
-import deleteMessageForEveryOneRoute from "./routes/deleteMessageForEveryOne.route.js"
-import deleteMessageForMeRoute from "./routes/updateUserInfo.route.js"
-import updatedUserRoute from "./routes/deleteMessageForMe.route.js"
-import passportRouter from "./routes/passport.route.js"
+import { ApiError } from "./utils/apiError.js";
+import { adminRouter } from "./routes/admin.routes.js";
+import { superAdminRouter } from "./routes/superAdmin.routes.js";
+import { productRouter } from "./routes/product.routes.js";
+import {  sortingRouters } from "./routes/sorting.routes.js";
+import {  orderRouters } from "./routes/order.routes.js";
+import {  addressRouters } from "./routes/address.routes.js";
+import {  reviewsRouters } from "./routes/reviews.routes.js";
+import categoryRouter from "./routes/category.routes.js";
+import { cartRouter } from "./routes/cart.rout.js";
+import favoritRouter from "./routes/favorate.routes.js";
+import sellerRequestRoutes from "./routes/sellerRequest.routes.js";
 const app = express()
-app.use(cookieParser())
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
-app.use(cors({
-    origin: process.env.origin,
-    credentials: true,
-}))
 app.use(
-    session({
-        secret: process.env.GOOGLE_CLIENT_SECRET, 
-        resave: false,
-        saveUninitialized: true,
-        cookie: { secure: process.env.NODE_ENV==='production' }, 
-    })
+  cors({
+    origin: process.env.CORS_ORIGIN,
+    credentials: true, 
+   
+
+  })
 );
-app.use(passport.initialize())
-app.use(passport.session())
 
-app.use('/api/auth', passportRouter)
-app.use("/api",
-    signUp,
-    login,
-    sendmessage,
-    fetchAllMessageRoute,
-    getLoggedInUserRoute,
-    checkUserRoute,
-    loggedOutRouter,
-    deleteMessageForEveryOneRoute,
-    deleteMessageForMeRoute,
-    updatedUserRoute,
 
-)
+app.use(express.json({ limit: "16kb" }))
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use("/api/v2",
+  superAdminRouter, 
+  adminRouter,
+   userRouter,
+   productRouter,
+   sortingRouters,
+   orderRouters,
+   addressRouters,
+   reviewsRouters,
+  cartRouter,
+   categoryRouter,
+   favoritRouter,
+   sellerRequestRoutes
+
+  )
+
+
+
 app.use((err, req, res, next) => {
-    if (err instanceof ApiError) {
-        res.status(err.statusCode || 500).json({
-            status: err.statusCode || 500,
-            error: err.message || "Internal Server Error",
-        })
-    } else {
-        console.log("use middleware error", err);
+  if (err instanceof ApiError) {
+    // Handle custom ApiError
+    console.log('instanceoferror',err)
+    res.status(err.statusCode).json({
+      success: false,
+      error: err.message,
+    });
+  } else {
+    // Handle generic errors
+    console.error("Error:", err.stack);
+    res.status(500).json({
+      success: false,
+      error: "An unexpected error occurred.",
+    });
+  }
+});
 
-        res.status(500).json({
-            status: 500,
-            error: "Internal Server Error",
-        })
-    }
-})
 
 
 export { app }
+
+
+
+
+
+
+
+
+

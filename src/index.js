@@ -1,83 +1,16 @@
-import { app } from "./app.js"
-import dotenv from "dotenv"
-import { dbConnect } from "./db/db.js"
-import { ApiError } from "./utils/api-error.js"
-import { createServer } from "http"
-import { Server } from "socket.io"
-import cors from "cors"
+import { app } from "./app.js";
+import connectDb from "./db/db.js";
+import dotenv from "dotenv";
+import { ApiError } from "./utils/apiError.js";
 
 dotenv.config({
-  path: ".env"
-})
-const onlineUsers = new Map(); // Use a single Map instance
-const port = process.env.PORT
-const httpServer = createServer(app)
-const io = new Server(httpServer, cors({
-  origin: process.env.origin,
-  credentials: true,
-}));
-
-io.on("connection", (socket) => {
-  socket.on("join", (username) => {
-    const cleanUsername = username.split("_")[0]
-    socket.username = cleanUsername;
-
-    onlineUsers.set(cleanUsername, socket.id);
-
-
-    socket.join(username); // Join room with username
-    if (onlineUsers.size > 0) {
-
-      io.emit("userStatus", {
-        onlineUsers: Array.from(onlineUsers.keys()),
-      
-      })
-    }
-
-
-
-
-
-  });
-
-  socket.on("disconnect", () => {
-    onlineUsers.delete(socket.username);
-    io.emit("userDisconnected", {
-      onlineUsers: Array.from(onlineUsers.keys()),
-     
-    });
-    console.log("❌ Socket disconnected");
-  });
-
-  socket.on("message", (message) => {
-
-    io.emit("backend-message", message);
-    socket.emit('message', message);
-
-    io.to(message.sender.username).emit("updateParticipants", {
-      sender: message.sender.username,
-      receiver: message.receiver.username
-    });
-
-    io.to(message.receiver.username).emit("updateParticipants", {
-      sender: message.sender.username,
-      receiver: message.receiver.username
-    });
-  });
-  socket.on('typing', (data) => {
-    io.to(data.room).emit('userTyping', { sender: data.sender, receiver: data.receiver });
-
-  });
-
-
+    path: ".env",
 });
-
-
 app.get('/', (req, res) => {
   res.send(`
     <html>
       <head>
-        <title>Chat API</title>
+        <title>eCommerce API</title>
         <style>
           body {
             margin: 0;
@@ -85,29 +18,62 @@ app.get('/', (req, res) => {
             display: flex;
             justify-content: center;
             align-items: center;
-            background-color: #f0f0f0;
-            font-family: Arial, sans-serif;
+            background: linear-gradient(to right, #eef2f3, #8e9eab);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          }
+          .container {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
           }
           h1 {
-            color: #333;
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 24px;
+          }
+          p {
+            color: #555;
+            font-size: 16px;
+            margin-top: 0;
+          }
+          a {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #0070f3;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: background-color 0.3s ease;
+          }
+          a:hover {
+            background-color: #0051b3;
           }
         </style>
       </head>
       <body>
-        <h1>Welcome to the real time chat API!</h1>
+        <div class="container">
+          <h1>Welcome to the eCommerce API</h1>
+          <p>This is the backend API for the e-commerce application.</p>
+          <a href="https://github.com/umarkhitabwazir/chat-application-backend" target="_blank">View Documentation</a>
+        </div>
       </body>
     </html>
   `);
 });
 
+const PORT=process.env.PORT
+connectDb().then(() => {
 
-dbConnect().then(() => {
+    app.listen(PORT, () => {
+        console.log("Server running on port ",PORT);
+    });
+}).catch((error) => {
 
-  httpServer.listen(port, () => {
-    console.log(`app listing on ${port}`)
-  })
-}
-).catch((error) => {
-  console.log("DB connection failed:", error)
-  throw new ApiError(501, "DB connection failed")
-})
+    console.log("DB connection failed: ", error);
+    return new ApiError(500, "DB connection failed")
+});
