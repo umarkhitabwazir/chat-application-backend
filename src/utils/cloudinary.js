@@ -1,33 +1,40 @@
-import { v2 as cloudinary } from "cloudinary";
+import cloudinary from 'cloudinary';
+import { ApiError } from './api-error.js';
+
 
 cloudinary.config({
-  cloud_name: process.env.CLOUD_NAME,
-  api_key: process.env.CLOUD_API_KEY,
-  api_secret: process.env.CLOUD_API_SECRET,
+  cloud_name: process.env.CLOUDINARY_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 
-const uploadOnCloudinary = async (buffer) => {
-    console.log('Cloudinarybuffer',buffer)
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      {
-        resource_type: "auto",
-        folder: "ecommerce/products-img",
-      },
-      (error, result) => {
-        if (error) {
-          console.error("Cloudinary upload error:", error);
-          reject(error);
-        } else {
-          console.log('result',result)
-          resolve(result);
+export const uploadImageToCloudinary = async (fileBuffer) => {
+  try {
+    return await new Promise((resolve, reject) => {
+      const stream = cloudinary.v2.uploader.upload_stream(
+        {
+          resource_type: 'auto',
+          folder: 'chat-app',
+          use_filename: false,
+          unique_filename: true,
+          overwrite: false,
+        },
+        (error, result) => {
+          if (error) {
+            console.log('Cloudinary upload error:', error);
+            return reject(new ApiError('Cloudinary upload failed'));
+          } else {
+            console.log('Cloudinary upload result:', result);
+            return resolve(result);
+          }
         }
-      }
-    );
+      );
 
-    stream.end(buffer); 
-  });
+      stream.end(fileBuffer);
+    });
+  } catch (error) {
+    console.error('Error uploading to Cloudinary:', error);
+    throw error;
+  }
 };
-
-export { uploadOnCloudinary };
