@@ -21,6 +21,10 @@ passport.use(
             scope: ['profile', 'email'],
         },
         async (accessToken, refreshToken, profile, done) => {
+               console.log("Strategy running with:");
+    console.log("clientID:", process.env.GOOGLE_CLIENT_ID);
+    console.log("clientSecret:", process.env.GOOGLE_CLIENT_SECRET);
+
             try {
                 let user = await User.findOne({ googleId: profile.id });
                 if (user) {
