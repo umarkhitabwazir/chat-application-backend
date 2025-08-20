@@ -25,6 +25,7 @@ app.use(cors({
     origin: process.env.origin,
     credentials: true,
 }))
+console.log("process.env.NODE_ENV==='production'", process.env.NODE_ENV === 'production')
 app.use(
     session({
         secret: process.env.SESSION_SECRET, 
@@ -37,7 +38,7 @@ app.use(
         cookie: { 
             secure: process.env.NODE_ENV==='production',
             httpOnly: true,
-             sameSite: "lax",
+             sameSite:process.env.NODE_ENV === 'production'?"none": "lax",
              
             }, 
     })
