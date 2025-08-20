@@ -3,8 +3,15 @@ import passport from 'passport'
 import { User } from './models/User.model.js';
 import { ApiError } from './utils/api-error.js';
 import dotenv from 'dotenv';
-dotenv.config();
+dotenv.config(
+    {
+        path:'.env'
+    }
 
+);
+
+console.log('process.env.GOOGLE_CLIENT_ID', process.env.GOOGLE_CLIENT_ID);
+console.log('process.env.GOOGLE_CLIENT_SECRET', process.env.GOOGLE_CLIENT_SECRET);
 passport.use(
     new GoogleStrategy(
         {
